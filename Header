@@ -1,0 +1,16 @@
+import { Bell } from "lucide-react";
+
+const Header = () => {
+  return (
+    <div className="fixed top-0 left-0 right-0 bg-safehaven-DEFAULT text-white py-4 px-4 flex justify-between items-center z-10">
+      <h1 className="text-lg font-semibold">Safe Haven</h1>
+      <div className="flex items-center space-x-3">
+        <button className="p-1 rounded-full bg-white/20">
+          <Bell size={20} className="text-white" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Header;
