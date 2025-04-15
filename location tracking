@@ -1,0 +1,168 @@
+import { useState, useEffect } from "react";
+import { MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+interface LocationData {
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  lastUpdated: Date | null;
+}
+
+interface LocationTrackerProps {
+  className?: string;
+}
+
+const LocationTracker = ({ className }: LocationTrackerProps) => {
+  const [location, setLocation] = useState<LocationData>({
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    lastUpdated: null,
+  });
+  const [isTracking, setIsTracking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [watchId, setWatchId] = useState<number | null>(null);
+
+  // Function to format the location data in a readable way
+  const formatLocation = () => {
+    if (!location.latitude || !location.longitude) {
+      return "Location not available";
+    }
+    
+    return `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+  };
+
+  // Function to format the time the location was last updated
+  const formatLastUpdated = () => {
+    if (!location.lastUpdated) {
+      return "Not available";
+    }
+    
+    return location.lastUpdated.toLocaleTimeString();
+  };
+
+  // Start tracking location
+  const startTracking = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsTracking(true);
+    setError(null);
+
+    // Options for the geolocation
+    const options = {
+      enableHighAccuracy: true, // Use GPS if available
+      timeout: 5000, // Time to wait for a location
+      maximumAge: 0, // Don't use a cached position
+    };
+
+    // Success callback function
+    const success = (position: GeolocationPosition) => {
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        lastUpdated: new Date(),
+      });
+      setError(null);
+    };
+
+    // Error callback function
+    const error = (err: GeolocationPositionError) => {
+      setError(`Error getting location: ${err.message}`);
+      setIsTracking(false);
+    };
+
+    // Start watching the position
+    const id = navigator.geolocation.watchPosition(success, error, options);
+    setWatchId(id);
+  };
+
+  // Stop tracking location
+  const stopTracking = () => {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
+    }
+    setIsTracking(false);
+  };
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [watchId]);
+
+  return (
+    <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold flex items-center">
+          <MapPin className="mr-2 text-safehaven-DEFAULT" size={20} />
+          Location Tracker
+        </h3>
+        <Button
+          variant={isTracking ? "destructive" : "default"}
+          onClick={isTracking ? stopTracking : startTracking}
+          size="sm"
+        >
+          {isTracking ? "Stop Tracking" : "Start Tracking"}
+        </Button>
+      </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="space-y-3 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-500">Status:</span>
+          <span className="font-medium">
+            {isTracking ? (
+              <span className="text-green-600 flex items-center">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-1 animate-pulse"></span>
+                Active
+              </span>
+            ) : (
+              <span className="text-gray-400">Inactive</span>
+            )}
+          </span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span className="text-gray-500">Coordinates:</span>
+          <span className="font-medium">{formatLocation()}</span>
+        </div>
+        
+        {location.accuracy && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">Accuracy:</span>
+            <span className="font-medium">±{location.accuracy.toFixed(0)} meters</span>
+          </div>
+        )}
+        
+        <div className="flex justify-between">
+          <span className="text-gray-500">Last Updated:</span>
+          <span className="font-medium">{formatLastUpdated()}</span>
+        </div>
+      </div>
+
+      {isTracking && location.latitude && location.longitude && (
+        <div className="mt-4 text-xs text-gray-500">
+          Your location is being tracked and will be shared during emergencies.
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LocationTracker;
