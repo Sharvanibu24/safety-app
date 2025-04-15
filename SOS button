@@ -1,0 +1,115 @@
+import { useState } from "react";
+import { Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface SOSButtonProps {
+  className?: string;
+}
+
+const SOSButton = ({ className }: SOSButtonProps) => {
+  const [alertActive, setAlertActive] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const [alertSent, setAlertSent] = useState(false);
+  const [timerRef, setTimerRef] = useState<number | null>(null);
+
+  const triggerSOS = () => {
+    setAlertActive(true);
+    
+    // Start countdown
+    const timer = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setAlertSent(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    setTimerRef(timer as unknown as number);
+  };
+
+  const cancelSOS = () => {
+    if (timerRef) {
+      clearInterval(timerRef);
+    }
+    setAlertActive(false);
+    setCountdown(5);
+    setAlertSent(false);
+  };
+
+  const closeDialog = () => {
+    setAlertActive(false);
+    setCountdown(5);
+    setAlertSent(false);
+  };
+
+  return (
+    <>
+      <button
+        onClick={triggerSOS}
+        className={`bg-emergency-DEFAULT hover:bg-emergency-hover text-white font-bold rounded-full shadow-lg transition-all active:scale-95 focus:outline-none focus:ring-4 focus:ring-red-300 ${className}`}
+      >
+        <div className="flex flex-col items-center justify-center p-6">
+          <Phone size={32} className="mb-2" />
+          <span className="text-lg font-bold">SOS</span>
+        </div>
+      </button>
+
+      <Dialog open={alertActive} onOpenChange={closeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-emergency-DEFAULT">
+              {alertSent ? "SOS Alert Sent" : "SOS Alert Countdown"}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {alertSent
+                ? "Your emergency contacts have been notified with your current location."
+                : `Sending SOS alert in ${countdown} seconds. Tap cancel to stop.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {alertSent ? (
+            <div className="flex flex-col items-center py-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <Phone className="h-8 w-8 text-green-600" />
+              </div>
+              <p className="text-sm text-gray-500 text-center">
+                Stay in a safe place if possible. Emergency services have been contacted.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-6">
+              <div className="w-20 h-20 rounded-full border-4 border-emergency-DEFAULT flex items-center justify-center text-3xl font-bold text-emergency-DEFAULT">
+                {countdown}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="sm:justify-center">
+            {alertSent ? (
+              <Button variant="outline" onClick={closeDialog}>
+                Close
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={cancelSOS}>
+                Cancel SOS
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default SOSButton;
